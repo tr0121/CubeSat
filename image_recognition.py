@@ -29,7 +29,7 @@ try:
 
     # Get model output
     with torch.no_grad():
-        output = model(img)  # Logits
+        output = model(img)
         confidence = torch.sigmoid(output).item()  # Confidence score (0 to 1)
 
     # Classify based on confidence
