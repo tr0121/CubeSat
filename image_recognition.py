@@ -18,7 +18,7 @@ os.makedirs(IMAGE_DIR, exist_ok=True)
 SIMILARITY_THRESHOLD = 0.7  # Adjust based on model performance
 
 # Mode file location (to control active/passive mode)
-MODE_FILE = "/tr0121/CubeSatmode.txt"  # Edit this file remotely via SSH to change mode
+MODE_FILE = "/tr0121/CubeSatmode.txt" 
 
 # --------------------- Initialize Camera --------------------- #
 camera = PiCamera()
