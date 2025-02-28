@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime
 from torchvision import transforms
 from PIL import Image, UnidentifiedImageError
-from picamera import PiCamera
+from picamera2 import PiCamera2
 
 # --------------------- Configuration --------------------- #
 # GitHub repository details
@@ -21,7 +21,7 @@ SIMILARITY_THRESHOLD = 0.7  # Adjust based on model performance
 MODE_FILE = "/tr0121/CubeSatmode.txt" 
 
 # --------------------- Initialize Camera --------------------- #
-camera = PiCamera()
+camera = PiCamera2()
 
 # --------------------- Load the Model --------------------- #
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
