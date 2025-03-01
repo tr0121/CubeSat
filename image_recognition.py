@@ -9,16 +9,12 @@ from PIL import Image, UnidentifiedImageError
 from picamera2 import PiCamera2
 
 # --------------------- Configuration --------------------- #
-# GitHub repository details
-REPO_DIR = "/tr0121/CubeSat"  # Replace with your actual repo path
+REPO_DIR = "/tr0121/CubeSat"
 IMAGE_DIR = os.path.join(REPO_DIR, "images")
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
-# Wildfire detection threshold
-SIMILARITY_THRESHOLD = 0.7  # Adjust based on model performance
-
-# Mode file location (to control active/passive mode)
-MODE_FILE = "/tr0121/CubeSatmode.txt" 
+SIMILARITY_THRESHOLD = 0.7  
+MODE_FILE = "/tr0121/CubeSatmode.txt"
 
 # --------------------- Initialize Camera --------------------- #
 camera = PiCamera2()
@@ -35,12 +31,12 @@ model.eval()
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
 # --------------------- Define Functions --------------------- #
 def update_mode_file():
+    """Pulls the latest mode file from GitHub."""
     try:
         subprocess.run(["git", "-C", REPO_DIR, "pull"], check=True)
         print("Updated local mode file from GitHub.")
@@ -48,43 +44,40 @@ def update_mode_file():
         print(f"Error updating mode file: {e}")
 
 def get_mode():
-    # Pull latest changes from GitHub so that mode.txt is updated
+    """Reads mode file (active/passive)."""
     update_mode_file()
     try:
         with open(MODE_FILE, "r") as f:
             mode = f.read().strip().lower()
-            if mode in ["active", "passive"]:
-                return mode
-            else:
-                return "active"
+            return mode if mode in ["active", "passive"] else "active"
     except FileNotFoundError:
         return "active"
 
-
 def capture_image():
-    """ Captures an image and returns its file path."""
+    """Captures an image and returns its file path."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(IMAGE_DIR, f"image_{timestamp}.jpg")
-    camera.capture(image_path)
+    camera.capture_file(image_path)  # FIXED: Corrected method
     print(f"Captured {image_path}")
     return image_path
 
 def predict_wildfire(image_path):
-    """ Processes the captured image with the wildfire detection model."""
+    """Processes the captured image with the wildfire detection model."""
     try:
         img = Image.open(image_path).convert("RGB")
         img = transform(img).unsqueeze(0).to(device)
         with torch.no_grad():
             output = model(img)
-            confidence = torch.sigmoid(output).item()  # Confidence score (0 to 1)
+            confidence = torch.sigmoid(output).squeeze().item()  # FIXED
         return confidence
     except (FileNotFoundError, UnidentifiedImageError) as e:
         print(f"Error processing image: {e}")
         return None
 
 def upload_to_github(image_path):
-    """ Uploads an image to GitHub using a deploy key."""
+    """Uploads an image to GitHub using a deploy key."""
     try:
+        subprocess.run(["ssh-agent", "bash", "-c", "ssh-add ~/.ssh/deploy-key"], check=True)  # FIXED
         subprocess.run(["git", "-C", REPO_DIR, "add", image_path], check=True)
         subprocess.run(["git", "-C", REPO_DIR, "commit", "-m", f"Wildfire detected {datetime.now()}"], check=True)
         subprocess.run(["git", "-C", REPO_DIR, "push"], check=True)
@@ -103,13 +96,13 @@ while True:
 
         if confidence is not None:
             if confidence > SIMILARITY_THRESHOLD:
-                print(f"Wildfire detected! Confidence: {confidence:.2f}")
+                print(f"🔥 Wildfire detected! Confidence: {confidence:.2f}")
                 upload_to_github(image_path)
             else:
-                print(f"No wildfire detected. Confidence: {confidence:.2f}. Deleting image.")
+                print(f"❌ No wildfire detected. Confidence: {confidence:.2f}. Deleting image.")
                 os.remove(image_path)
     else:
-        print("Passive mode active: Skipping image capture and processing.")
+        print("🔄 Passive mode active: Skipping image capture and processing.")
 
-    print("Waiting 6 minutes before next check...")
-    time.sleep(360)  # Wait for 6 minutes before next iteration
+    print("⏳ Waiting 1 hour before next check...")
+    time.sleep(3600)  # FIXED: 1-hour delay instead of 6 minutes
