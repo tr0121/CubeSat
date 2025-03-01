@@ -97,13 +97,13 @@ def upload_to_github(image_path):
         # Set git safe directory
         subprocess.run(["git", "config", "--global", "--add", "safe.directory", REPO_DIR], check=True)
 
+        # Configure Git identity (REQUIRED)
+        subprocess.run(["git", "-C", REPO_DIR, "config", "user.email", "bennyliu700@gmail.com"], check=True)
+        subprocess.run(["git", "-C", REPO_DIR, "config", "user.name", "Benny"], check=True)
+
         # SSH key configuration
         ssh_key_path = os.path.expanduser("~/.ssh/id_rsa")
-        if not os.path.exists(ssh_key_path):
-            raise FileNotFoundError(f"SSH key missing: {ssh_key_path}")
         os.chmod(ssh_key_path, 0o600)
-
-        # SSH agent setup
         subprocess.run(
             f"eval $(ssh-agent -s) && ssh-add {ssh_key_path}",
             shell=True,
@@ -111,7 +111,7 @@ def upload_to_github(image_path):
             executable="/bin/bash"
         )
 
-        # Convert to relative path
+        # Get relative path
         rel_path = os.path.relpath(image_path, REPO_DIR)
 
         # Git operations
