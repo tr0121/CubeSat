@@ -99,15 +99,8 @@ def upload_to_github(image_path):
 
         # SSH key configuration
         ssh_key_path = os.path.expanduser("~/.ssh/id_rsa")
-        ssh_pub_key_path = ssh_key_path + ".pub"
-
-        # Verify keys exist
         if not os.path.exists(ssh_key_path):
-            raise FileNotFoundError(f"Private key not found at {ssh_key_path}")
-        if not os.path.exists(ssh_pub_key_path):
-            raise FileNotFoundError(f"Public key not found at {ssh_pub_key_path}")
-
-        # Set strict permissions
+            raise FileNotFoundError(f"SSH key missing: {ssh_key_path}")
         os.chmod(ssh_key_path, 0o600)
 
         # SSH agent setup
@@ -118,8 +111,11 @@ def upload_to_github(image_path):
             executable="/bin/bash"
         )
 
+        # Convert to relative path
+        rel_path = os.path.relpath(image_path, REPO_DIR)
+
         # Git operations
-        subprocess.run(["git", "-C", REPO_DIR, "add", os.path.basename(image_path)], check=True)
+        subprocess.run(["git", "-C", REPO_DIR, "add", rel_path], check=True)
         subprocess.run(["git", "-C", REPO_DIR, "commit", "-m", f"Wildfire detected {datetime.now()}"], check=True)
         subprocess.run(["git", "-C", REPO_DIR, "push"], check=True)
         print("✅ Wildfire image uploaded successfully")
