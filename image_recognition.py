@@ -38,7 +38,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=False)
 model.fc = nn.Linear(model.fc.in_features, 1)
 model.load_state_dict(torch.load(
-    os.path.join(REPO_DIR, "wildfire_model.pth"),
+    os.path.join(REPO_DIR, "wildfire_model60.pth"),
     map_location=device
 ))
 model = model.to(device)
