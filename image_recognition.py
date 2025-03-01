@@ -9,24 +9,29 @@ from PIL import Image, UnidentifiedImageError
 from picamera2 import PiCamera2
 
 # --------------------- Configuration --------------------- #
-REPO_DIR = "/tr0121/CubeSat"
+REPO_DIR = os.path.expanduser("~/CubeSat")  # Assuming cloned to home
 IMAGE_DIR = os.path.join(REPO_DIR, "images")
-os.makedirs(IMAGE_DIR, exist_ok=True)
+os.makedirs(IMAGE_DIR, exist_ok=True)  # Create images directory
 
-SIMILARITY_THRESHOLD = 0.7  
-MODE_FILE = "/tr0121/CubeSatmode.txt"
+SIMILARITY_THRESHOLD = 0.7
+MODE_FILE = os.path.join(REPO_DIR, "CubeSatmode.txt")  # Fixed filename
 
 # --------------------- Initialize Camera --------------------- #
 camera = PiCamera2()
+# Configure camera (required for PiCamera2)
+config = camera.create_still_configuration()
+camera.configure(config)
 
 # --------------------- Load the Model --------------------- #
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=False)
 model.fc = nn.Linear(model.fc.in_features, 1)
-model.load_state_dict(torch.load('wildfire_model.pth', map_location=device))
+model.load_state_dict(torch.load(
+    os.path.join(REPO_DIR, "wildfire_model.pth"),  # Full path to model
+    map_location=device
+))
 model = model.to(device)
 model.eval()
-
 # --------------------- Image Preprocessing --------------------- #
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
